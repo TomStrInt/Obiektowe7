@@ -72,8 +72,6 @@ class MainWindow(QtWidgets.QMainWindow):
         item.setPos(50, 50)
         self.scene.addItem(item)
 
-
-
     def addEllipse(self): #dodawanie elipsy
         rect = QtCore.QRectF(0, 0, 100, 50)
         item = QtWidgets.QGraphicsEllipseItem(rect)
@@ -96,6 +94,8 @@ class MainWindow(QtWidgets.QMainWindow):
         item.setPos(250, 50)
         self.scene.addItem(item)
 
+
+
     def bringForward(self):  #przesun na wierzch
         for item in self.scene.selectedItems():
             current_z = item.zValue()
@@ -116,6 +116,9 @@ class MainWindow(QtWidgets.QMainWindow):
             return  
 
 
+
+
+
         # Tworzenie obrazu z przezroczystym tłem
         img = QtGui.QImage(rect.size().toSize(), QtGui.QImage.Format_ARGB32)
         img.fill(QtCore.Qt.transparent)
@@ -127,7 +130,50 @@ class MainWindow(QtWidgets.QMainWindow):
         if filename:
             img.save(filename)
 
+
+
+
+    def saveVector(self): #zapisywanie do formatu json
+        items_data = []
+
+        for item in self.scene.items():
+            item_data = {}
+            if isinstance(item, QtWidgets.QGraphicsRectItem):
+                item_data["type"] = "rectangle"
+                rect = item.rect()
+                item_data["rect"] = [rect.x(), rect.y(), rect.width(), rect.height()]
+            elif isinstance(item, QtWidgets.QGraphicsEllipseItem):
+                item_data["type"] = "ellipse"
+                rect = item.rect()
+                item_data["rect"] = [rect.x(), rect.y(), rect.width(), rect.height()]
+            elif isinstance(item, QtWidgets.QGraphicsPolygonItem):
+                item_data["type"] = "polygon"
+                polygon = item.polygon()
+                points = []
+                for i in range(polygon.count()):
+                    pt = polygon.at(i)
+                    points.append([pt.x(), pt.y()])
+                item_data["points"] = points
+            else:
+                continue
+
+            pos = item.pos()
+            item_data["pos"] = [pos.x(), pos.y()]
+            item_data["z"] = item.zValue()
     
+            if hasattr(item, "brush"):
+                item_data["fill"] = item.brush().color().name()
+            if hasattr(item, "pen"):
+                pen = item.pen()
+                item_data["pen"] = pen.color().name()
+                item_data["penWidth"] = pen.widthF()
+            items_data.append(item_data)
+
+        data = {"items": items_data}
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Zapisz jako wektorowa", "", "Vector Files (*.vec);;JSON Files (*.json)")
+        if filename:
+            with open(filename, "w") as f:
+                json.dump(data, f, indent=4)
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
